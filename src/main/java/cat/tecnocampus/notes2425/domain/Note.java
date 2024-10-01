@@ -19,6 +19,7 @@ public class Note {
     private String title;
     private String content;
 
+    @Column(name = "creation_date")
     private LocalDateTime creationDate;
 
     @ManyToMany
@@ -29,5 +30,21 @@ public class Note {
     )
     private Set<Tag> tags;
 
-    // Constructor, getters y setters
+    public Set<Tag> tags() {
+        return this.tags;
+    }
+
+
+    // Constructor vacío requerido por JPA
+    public Note() {}
+
+    // Constructor completo
+    public Note(Long id, UserLab owner, String title, String content, LocalDateTime creationDate, Set<Tag> tags) {
+        this.id = id;
+        this.owner = owner;
+        this.title = title;
+        this.content = content;
+        this.creationDate = creationDate;
+        this.tags = tags;
+    }
 }

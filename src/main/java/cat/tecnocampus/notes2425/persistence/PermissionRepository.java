@@ -45,11 +45,36 @@ public class PermissionRepository {
 
     //insert or update permission with merge (h2)
     public void addPermission(long userId, long noteId, boolean canRead, boolean canEdit) {
-        String query = """
-            merge into permission (user_id, note_id, can_read, can_edit) values (?, ?, ?, ?)
+        // Intentamos actualizar primero
+        String updateQuery = """
+        UPDATE permission 
+        SET can_read = ?, can_edit = ? 
+        WHERE user_id = ? AND note_id = ?
+    """;
+
+        int rowsAffected = jdbcClient.sql(updateQuery)
+                .param(canRead)
+                .param(canEdit)
+                .param(userId)
+                .param(noteId)
+                .update();
+
+        // Si no se actualizó ninguna fila, significa que no existe, así que insertamos
+        if (rowsAffected == 0) {
+            String insertQuery = """
+            INSERT INTO permission (user_id, note_id, can_read, can_edit) 
+            VALUES (?, ?, ?, ?)
         """;
-        jdbcClient.sql(query).param(userId).param(noteId).param(canRead).param(canEdit).update();
+            jdbcClient.sql(insertQuery)
+                    .param(userId)
+                    .param(noteId)
+                    .param(canRead)
+                    .param(canEdit)
+                    .update();
+        }
     }
+
+
 
     private class NoteExtractor implements ResultSetExtractor<List<Note>> {
         @Override
@@ -62,7 +87,7 @@ public class PermissionRepository {
                     UserLab owner = userRepository.findById(rs.getLong("owner_id")).orElseThrow();
                     notes.put(noteId, new Note(noteId, owner, rs.getString("title"),
                             rs.getString("content"), rs.getTimestamp("creation_date").toLocalDateTime(),
-                            new HashSet<>(Arrays.asList(new Tag(rs.getString("tag_name"))))));
+                            new HashSet<>(Collections.singletonList(new Tag(rs.getString("tag_name"))))));
                 }
                 else {
                     notes.get(noteId).tags().add(new Tag(rs.getString("tag_name")));

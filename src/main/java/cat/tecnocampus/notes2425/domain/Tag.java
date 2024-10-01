@@ -11,5 +11,9 @@ public class Tag {
     @Id
     private String name;
 
+    public Tag(String tagName) {
+    }
+
+
     // Constructor, getters y setters
 }
